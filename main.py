@@ -3,6 +3,7 @@ from fastapi import FastAPI, Request
 
 app = FastAPI()
 
+i = 0
 
 @app.get("/")
 async def root():
@@ -14,10 +15,14 @@ async def catch_all(request: Request):
     """
     모든 POST 요청에 대해 2분 대기 후 더미 응답을 반환합니다.
     """
-    await asyncio.sleep(120)
+    print("Request received at /llm")
     
     # 필요하다면 요청 본문을 읽어서 로그를 찍거나 응답에 포함할 수 있습니다.
-    # body = await request.json()
+    body = await request.json()
+    print(f"Request body: {body}" + str(i))
+    i += 1
+
+    await asyncio.sleep(120)
     
     return {
         "status": "success",
