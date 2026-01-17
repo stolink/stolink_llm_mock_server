@@ -12,6 +12,7 @@ async def root():
 
 @app.api_route("/llm", methods=["POST"])
 async def catch_all(request: Request):
+    global i
     """
     모든 POST 요청에 대해 2분 대기 후 더미 응답을 반환합니다.
     """
