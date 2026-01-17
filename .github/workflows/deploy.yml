@@ -115,10 +115,18 @@ jobs:
             # 4. Pull new image
             docker pull $IMAGE_NAME:latest
             
-            # 5. Stop and remove old container
+            # 5. Stop and remove old container (ByName or ByPort)
             echo "Stopping old container..."
             docker stop sto-link-llm-mock-server || true
             docker rm sto-link-llm-mock-server || true
+            
+            # Find and kill ANY container using port 8000
+            CONFLICT_ID=$(docker ps -q --filter "publish=8000")
+            if [ ! -z "$CONFLICT_ID" ]; then
+                echo "Found conflicting container $CONFLICT_ID on port 8000. Removing..."
+                docker stop $CONFLICT_ID || true
+                docker rm $CONFLICT_ID || true
+            fi
             
             # 6. Run new container
             echo "Starting new container..."
