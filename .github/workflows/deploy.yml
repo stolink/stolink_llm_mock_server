@@ -44,8 +44,6 @@ jobs:
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
-    environment:
-      name: test
     steps:
       - name: Debug Secrets
         run: |
