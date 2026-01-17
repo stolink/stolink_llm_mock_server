@@ -50,10 +50,32 @@ jobs:
       - name: Debug Secrets
         run: |
           echo "Checking secret availability..."
+          MISSING=0
+          
           if [ -z "${{ secrets.EC2_HOST }}" ]; then
-            echo "Error: EC2_HOST is empty!"
+            echo "::error::EC2_HOST secret is missing or empty!"
+            MISSING=1
           else
-            echo "Success: EC2_HOST is loaded."
+            echo "✅ EC2_HOST is loaded."
+          fi
+          
+          if [ -z "${{ secrets.EC2_USERNAME }}" ]; then
+            echo "::error::EC2_USERNAME secret is missing or empty!"
+            MISSING=1
+          else
+            echo "✅ EC2_USERNAME is loaded."
+          fi
+          
+          if [ -z "${{ secrets.EC2_SSH_KEY }}" ]; then
+            echo "::error::EC2_SSH_KEY secret is missing or empty!"
+            MISSING=1
+          else
+            echo "✅ EC2_SSH_KEY is loaded."
+          fi
+
+          if [ $MISSING -eq 1 ]; then
+            echo "One or more secrets are missing. Please check GitHub Settings > Environments > test > Secrets."
+            exit 1
           fi
 
       - name: Deploy to EC2
