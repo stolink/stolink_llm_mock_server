@@ -7,6 +7,7 @@ i = 0
 
 @app.get("/")
 async def root():
+    print("root test")
     return {"message": "LLM Mock Server is running"}
 
 
