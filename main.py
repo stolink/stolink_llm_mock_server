@@ -1,5 +1,7 @@
 import asyncio
+import json
 from fastapi import FastAPI, Request
+from fastapi.responses import PlainTextResponse
 
 app = FastAPI()
 
@@ -7,59 +9,32 @@ i = 0
 
 # 각 에이전트별 Mock 응답 스키마
 MOCK_RESPONSES = {
-    # Identity Agent
-    "identity": {
-        "characters": []
-    },
-    # Appearance Agent
-    "appearance": {
-        "characters": []
-    },
-    # Personality Agent
-    "personality": {
-        "characters": []
-    },
-    # Relations Agent (CharacterRelationsResult)
-    "relations": {
-        "characters": []
-    },
-    # Setting Agent
+    "identity": {"characters": []},
+    "appearance": {"characters": []},
+    "personality": {"characters": []},
+    "relations": {"characters": []},
     "setting": {
-        "settings": [
-            {
-                "name": "Unknown Location",
-                "type": "location",
-                "description": "Mock setting",
-                "attributes": {}
-            }
-        ]
+        "settings": [{
+            "name": "Unknown Location",
+            "type": "location",
+            "description": "Mock setting",
+            "attributes": {}
+        }]
     },
-    # Event Agent
-    "event": {
-        "events": []
-    },
-    # Relationship Analysis Agent
-    "relationship": {
-        "relationships": [],
-        "neo4j_edges": []
-    },
-    # Consistency Agent
+    "event": {"events": []},
+    "relationship": {"relationships": [], "neo4j_edges": []},
     "consistency": {
         "overall_score": 100,
         "requires_reextraction": False,
         "conflicts": [],
         "warnings": []
     },
-    # Default fallback
-    "default": {
-        "result": "mock response"
-    }
+    "default": {"characters": []}
 }
 
 
 def detect_agent_type(body: dict) -> str:
     """요청 본문에서 에이전트 타입을 추론"""
-    # Gemini API 형식에서 프롬프트 추출
     try:
         contents = body.get("contents", [])
         prompt_text = ""
@@ -71,8 +46,7 @@ def detect_agent_type(body: dict) -> str:
                 elif isinstance(part, str):
                     prompt_text += part.lower()
         
-        # 키워드 기반 에이전트 탐지
-        if "identity" in prompt_text or "이름" in prompt_text and "캐릭터" in prompt_text:
+        if "identity" in prompt_text or ("이름" in prompt_text and "캐릭터" in prompt_text):
             return "identity"
         elif "appearance" in prompt_text or "외모" in prompt_text or "visual" in prompt_text:
             return "appearance"
@@ -96,13 +70,11 @@ def detect_agent_type(body: dict) -> str:
 
 @app.get("/")
 async def root():
-    print("root test")
     return {"message": "LLM Mock Server is running"}
 
 
 @app.get("/health")
 async def health():
-    """Health check endpoint"""
     return {"status": "healthy"}
 
 
@@ -116,27 +88,15 @@ async def mock_llm(request: Request):
     print(f"[{i}] Detected agent: {agent_type}")
     i += 1
     
-    # 2분 대기 (벤치마크용)
-    await asyncio.sleep(120)
+    # 30초 대기 (벤치마크용)
+    await asyncio.sleep(30)
     
-    # Gemini API 응답 형식으로 반환
+    # 순수 JSON 문자열로 반환 (PlainTextResponse)
     mock_content = MOCK_RESPONSES.get(agent_type, MOCK_RESPONSES["default"])
-    
-    return {
-        "candidates": [
-            {
-                "content": {
-                    "parts": [
-                        {
-                            "text": str(mock_content).replace("'", '"').replace("True", "true").replace("False", "false")
-                        }
-                    ],
-                    "role": "model"
-                },
-                "finishReason": "STOP"
-            }
-        ]
-    }
+    return PlainTextResponse(
+        content=json.dumps(mock_content, ensure_ascii=False),
+        media_type="application/json"
+    )
 
 
 if __name__ == "__main__":
