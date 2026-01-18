@@ -20,8 +20,7 @@ async def catch_all(request: Request):
     print("Request received at /llm")
     
     # 필요하다면 요청 본문을 읽어서 로그를 찍거나 응답에 포함할 수 있습니다.
-    body = await request.json()
-    print(f"Request body: {body}" + str(i))
+    print(str(i))
     i += 1
 
     await asyncio.sleep(120)
