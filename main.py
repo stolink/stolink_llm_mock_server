@@ -7,7 +7,6 @@ app = FastAPI()
 
 i = 0
 
-# 각 에이전트별 Mock 응답 스키마
 MOCK_RESPONSES = {
     "identity": {"characters": []},
     "appearance": {"characters": []},
@@ -36,8 +35,16 @@ MOCK_RESPONSES = {
 def detect_agent_type(body: dict) -> str:
     """요청 본문에서 에이전트 타입을 추론"""
     try:
-        contents = body.get("contents", [])
         prompt_text = ""
+        
+        # ✅ AI 백엔드가 보내는 형식: {"messages": [{"role": "user", "content": "..."}]}
+        messages = body.get("messages", [])
+        for msg in messages:
+            if isinstance(msg, dict) and "content" in msg:
+                prompt_text += msg["content"].lower()
+        
+        # Gemini API 형식도 지원 (fallback)
+        contents = body.get("contents", [])
         for content in contents:
             parts = content.get("parts", [])
             for part in parts:
@@ -45,6 +52,8 @@ def detect_agent_type(body: dict) -> str:
                     prompt_text += part["text"].lower()
                 elif isinstance(part, str):
                     prompt_text += part.lower()
+        
+        print(f"[DEBUG] Prompt preview: {prompt_text[:200]}...")
         
         if "identity" in prompt_text or ("이름" in prompt_text and "캐릭터" in prompt_text):
             return "identity"
@@ -88,15 +97,14 @@ async def mock_llm(request: Request):
     print(f"[{i}] Detected agent: {agent_type}")
     i += 1
     
-    # 30초 대기 (벤치마크용)
     await asyncio.sleep(30)
     
-    # 순수 JSON 문자열로 반환 (PlainTextResponse)
     mock_content = MOCK_RESPONSES.get(agent_type, MOCK_RESPONSES["default"])
-    return PlainTextResponse(
-        content=json.dumps(mock_content, ensure_ascii=False),
-        media_type="application/json"
-    )
+    
+    # ✅ AI 백엔드가 기대하는 형식: {"content": "JSON 문자열"}
+    return {
+        "content": json.dumps(mock_content, ensure_ascii=False)
+    }
 
 
 if __name__ == "__main__":
